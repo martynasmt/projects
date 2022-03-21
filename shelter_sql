@@ -1,0 +1,31 @@
+This dataset was created based on the publicly available database by a Warsaw based animal shelter "Na Paluchu". 
+It stores statistics of in and outgoing dogs and cats between the years 2015-2021.
+The purpose of the project
+
+
+As a first step, the yearly dogs and cats summaries were joined together in newly created tables for further processing purposes:
+
+CREATE TABLE shelter_data.pets_yearly AS
+SELECT 
+cats_y.year, cats_y.y_arrived_cats, cats_y.y_adopted_cats, cats_y.y_owner_pickup_cats,
+dogs_y.y_arrived_dogs, dogs_y.y_adopted_dogs, dogs_y.y_owner_pickup_dogs, 
+FROM `paluch.shelter_data.cats_yearly` AS cats_y
+INNER JOIN `paluch.shelter_data.dogs_year`AS dogs_y
+ON cats_y.year = dogs_y.year
+ORDER BY year;
+
+CREATE TABLE shelter_data.pets_monthly AS
+SELECT 
+cats_m.month, cats_m.m_arrived_cats, cats_m.m_adopted_cats, cats_m.m_owner_pickup_cats,
+dogs_m.m_arrived_dogs, dogs_m.m_adopted_dogs, dogs_m.m_owner_pickup_dogs, 
+FROM `paluch.shelter_data.cats_monthly` AS cats_m
+INNER JOIN `paluch.shelter_data.dogs_monthly`AS dogs_m
+ON cats_m.month = dogs_m.month
+ORDER BY month;
+
+
+DATA EXPLORATION
+
+In which year the number of adoptions was the highest for cats and dogs?
+
+
