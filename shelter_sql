@@ -35,3 +35,10 @@ WHERE m_adopted_cats = (SELECT Max(m_adopted_cats) FROM `paluch.shelter_data.pet
 SELECT month, m_adopted_dogs
 FROM `paluch.shelter_data.pets_monthly`
 WHERE m_adopted_dogs = (SELECT Max(m_adopted_dogs) FROM `paluch.shelter_data.pets_monthly`);
+
+What part of animals was picked up by their owners after arriving to the shelter?
+
+SELECT month, 
+ m_owner_pickup_dogs/m_arrived_dogs*100 as picked_up_percent_dogs,
+ m_owner_pickup_cats/m_arrived_cats*100 as picked_up_percent_cats
+FROM `paluch.shelter_data.pets_monthly`;
