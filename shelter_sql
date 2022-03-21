@@ -26,6 +26,12 @@ ORDER BY month;
 
 DATA EXPLORATION
 
-In which year the number of adoptions was the highest for cats and dogs?
+In which month the number of adoptions was the highest for cats and dogs?
 
+SELECT month, m_adopted_cats
+FROM `paluch.shelter_data.pets_monthly`
+WHERE m_adopted_cats = (SELECT Max(m_adopted_cats) FROM `paluch.shelter_data.pets_monthly`);
 
+SELECT month, m_adopted_dogs
+FROM `paluch.shelter_data.pets_monthly`
+WHERE m_adopted_dogs = (SELECT Max(m_adopted_dogs) FROM `paluch.shelter_data.pets_monthly`);
