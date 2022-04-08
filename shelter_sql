@@ -1,44 +1,48 @@
-This dataset was created based on the publicly available database by a Warsaw based animal shelter "Na Paluchu". 
-It stores statistics of in and outgoing dogs and cats between the years 2015-2021.
-The purpose of the project
+AUSTIN ANIMAL SHELTER
 
+## To start, I have checked what kind of animals were admitted to the shelter
 
-As a first step, the yearly dogs and cats summaries were joined together in newly created tables for further processing purposes:
+SELECT DISTINCT animal_type
+FROM `austin_data.outcome_data`;
 
-CREATE TABLE shelter_data.pets_yearly AS
-SELECT 
-cats_y.year, cats_y.y_arrived_cats, cats_y.y_adopted_cats, cats_y.y_owner_pickup_cats,
-dogs_y.y_arrived_dogs, dogs_y.y_adopted_dogs, dogs_y.y_owner_pickup_dogs, 
-FROM `paluch.shelter_data.cats_yearly` AS cats_y
-INNER JOIN `paluch.shelter_data.dogs_year`AS dogs_y
-ON cats_y.year = dogs_y.year
-ORDER BY year;
+## In this analysis I decided to focus on dogs and cats only, so I have proceeded with creating a dedicated table
 
-CREATE TABLE shelter_data.pets_monthly AS
-SELECT 
-cats_m.month, cats_m.m_arrived_cats, cats_m.m_adopted_cats, cats_m.m_owner_pickup_cats,
-dogs_m.m_arrived_dogs, dogs_m.m_adopted_dogs, dogs_m.m_owner_pickup_dogs, 
-FROM `paluch.shelter_data.cats_monthly` AS cats_m
-INNER JOIN `paluch.shelter_data.dogs_monthly`AS dogs_m
-ON cats_m.month = dogs_m.month
-ORDER BY month;
+CREATE TABLE austin_shelter_data.dogs_cats_data AS
+SELECT DISTINCT *
+FROM `paluch.austin_shelter_data.austin_summary`
+WHERE animal_type IN ('Dog', 'Cat');
 
 
 DATA EXPLORATION
 
-In which month the number of adoptions was the highest for cats and dogs?
+## As a first step, I have checked the percentage of each animal type in the dataset - in this case, I have added a calculated column with percentage of dogs
+SELECT (
+    SELECT COUNT(animal_id)
+    FROM `austin_data.dogs_cats_data`
+    WHERE animal_type = 'Dog'
+    )/COUNT(animal_id)*100 AS dogs_percentage
+FROM `austin_data.dogs_cats_data`;
 
-SELECT month, m_adopted_cats
-FROM `paluch.shelter_data.pets_monthly`
-WHERE m_adopted_cats = (SELECT Max(m_adopted_cats) FROM `paluch.shelter_data.pets_monthly`);
+## To proceed with the analysis, I have converted the monthyear colum's data type from string to date
 
-SELECT month, m_adopted_dogs
-FROM `paluch.shelter_data.pets_monthly`
-WHERE m_adopted_dogs = (SELECT Max(m_adopted_dogs) FROM `paluch.shelter_data.pets_monthly`);
+SELECT *, CAST(monthyear AS DATE FORMAT 'MON YYYY') AS month_year
+FROM `paluch.austin_shelter_data.dogs_cats_data`
+ORDER BY month_year;
 
-What part of animals was picked up by their owners after arriving to the shelter?
+## percentage of animals picked up by their owners
 
-SELECT month, 
- m_owner_pickup_dogs/m_arrived_dogs*100 as picked_up_percent_dogs,
- m_owner_pickup_cats/m_arrived_cats*100 as picked_up_percent_cats
-FROM `paluch.shelter_data.pets_monthly`;
+SELECT animal_type, (
+    SELECT COUNT(animal_id)
+    FROM `austin_data.dogs_cats_data`
+    WHERE outcome_type = 'Return to Owner'
+)/COUNT(animal_id)*100
+FROM `austin_data.dogs_cats_data` AS percentage_returned_home
+GROUP BY animal_type;
+
+## In order to proceed with creating a Tableau dashboard, I have joined together the tables outcome_data and income_data, to retrieve the dates when 
+the animals left the shelter.
+
+SELECT *
+FROM `austin-animal-shelter.austin_data.income_data`
+LEFT JOIN `austin-animal-shelter.austin_data.outcome_data`
+ON income_data.animal_id = outcome_data.animal_id;
