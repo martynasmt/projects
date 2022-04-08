@@ -1,11 +1,13 @@
 AUSTIN ANIMAL SHELTER
+This analysis is based on the publicly available dataset, made available by the Austin Animal Shelter (source: ). It provides information regarding
+animals 
 
 ## To start, I have checked what kind of animals were admitted to the shelter
 
 SELECT DISTINCT animal_type
 FROM `austin_data.outcome_data`;
 
-## In this analysis I decided to focus on dogs and cats only, so I have proceeded with creating a dedicated table
+## In this analysis I decided to focus on dogs and cats only, so I have proceeded with creating a dedicated table to facilitate the analysis
 
 CREATE TABLE austin_shelter_data.dogs_cats_data AS
 SELECT DISTINCT *
