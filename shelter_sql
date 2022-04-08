@@ -42,9 +42,11 @@ FROM `austin_data.dogs_cats_data` AS percentage_returned_home
 GROUP BY animal_type;
 
 ## In order to proceed with creating a Tableau dashboard, I have joined together the tables outcome_data and income_data, to retrieve the dates when 
-the animals left the shelter.
+the animals left the shelter and stored the data in a view.
 
-SELECT *
-FROM `austin-animal-shelter.austin_data.income_data`
-LEFT JOIN `austin-animal-shelter.austin_data.outcome_data`
-ON income_data.animal_id = outcome_data.animal_id;
+CREATE VIEW austin_data.viz_data AS
+SELECT indata.animal_id, indata.animal_type, out.monthyear, out.outcome_type
+FROM `austin-animal-shelter.austin_data.income_data` indata
+JOIN `austin-animal-shelter.austin_data.outcome_data` out
+ON indata.animal_id = out.animal_id
+WHERE indata.animal_type in ('Dog', 'Cat');
