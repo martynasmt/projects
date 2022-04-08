@@ -17,7 +17,12 @@ WHERE animal_type IN ('Dog', 'Cat');
 
 DATA EXPLORATION
 
-## As a first step, I have checked the percentage of each animal type in the dataset - in this case, I have added a calculated column with percentage of dogs
+## Total number of dogs and cats admitted in the shelter between October 2013 and March 2022
+SELECT animal_type, COUNT(DISTINCT animal_id)
+FROM `austin_data.dogs_cats_data`
+GROUP BY animal_type;
+
+## percentage of each animal type in the dataset
 SELECT (
     SELECT COUNT(animal_id)
     FROM `austin_data.dogs_cats_data`
@@ -41,8 +46,7 @@ SELECT animal_type, (
 FROM `austin_data.dogs_cats_data` AS percentage_returned_home
 GROUP BY animal_type;
 
-## In order to proceed with creating a Tableau dashboard, I have joined together the tables outcome_data and income_data, to retrieve the dates when 
-the animals left the shelter and stored the data in a view.
+## created a view of joined data tables for visualization purposes
 
 CREATE VIEW austin_data.viz_data AS
 SELECT indata.animal_id, indata.animal_type, out.monthyear, out.outcome_type
