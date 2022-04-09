@@ -1,0 +1,216 @@
+---
+title: "Prices of Airbnb Offers in Barcelona - Data Exploration"
+author: "Martyna Smektała"
+date: "4/9/2022"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+```
+
+The purpose of this data exploration was to define characteristics of the most expensive Airbnb listings in the city of Barcelona.
+
+In order to start the analysis, the relevant data sets and R packages were loaded. The data sets store information regarding Airbnb listings in the city of Barcelona, updated on June 8th, 2021. Data source: http://insideairbnb.com/get-the-data.
+
+
+```{r}
+library(tidyverse)
+library(tidytext)
+library(janitor)
+library(wordcloud)
+library(tm)
+
+listings <- read_csv('listings-2.csv')
+details_listings <- read_csv("listings_detailed.csv") %>% 
+  clean_names()
+
+```
+
+In the next step, the chosen columns were extracted from the csv files and stored in dedicated objects. The room type "Hotel room" was skipped, as in accordance with Airbnb's policy such offers shouldn't be listed. The column "neighborhood_group_cleansed" was renamed to "district" to facilitate further calculations.
+
+```{r}
+details_listings_lite <- details_listings %>% 
+  select(id, number_of_reviews, neighbourhood_group_cleansed, room_type, bedrooms, amenities, minimum_nights, maximum_nights, longitude, latitude, accommodates, beds) %>% 
+  filter(room_type != "Hotel room") %>% 
+  rename("district"="neighbourhood_group_cleansed")
+
+details_listings_lite <- listings %>% 
+  select(id, price) %>% 
+  inner_join(details_listings_lite, by = "id") %>% 
+  mutate_all(~replace(., is.na(.), 0))
+```
+
+Types of accommodation
+
+The data exploration was started with summing the room types and presenting them 
+on a pie chart. Over 50% of the listings were defined as an entire apartment.
+
+```{r }
+rt <- details_listings_lite %>% 
+  count(room_type)
+
+rt_percent <- rt %>% 
+  mutate(percent = n/(sum(n))*100) %>% 
+  arrange(percent)
+
+library(RColorBrewer)
+myPalette <- brewer.pal(15, "Set2") 
+slices <- c(rt_percent$percent)
+lbls <- c(rt_percent$room_type)
+pie(slices, labels = lbls, main="Room types", border="white", col=myPalette)
+```
+
+Airbnb offers for each of Barcelona districts
+
+The majority of the listings were located in the most touristy areas of Barcelona - Eixample and Ciutat Vella.  
+
+```{r}
+oferty_wg_dzielnic <- details_listings_lite %>% 
+  count(district) %>% 
+  arrange(desc(n))
+
+ggplot(oferty_wg_dzielnic, 
+       aes(x = n, y = reorder(district, n), fill = "orange")) + 
+  geom_col() + 
+  labs(x = 'offers number',
+       y = 'district' ) +
+  scale_color_binned("oranges")+
+  theme_bw()
+```
+
+Offers per neighbourhood presented on a pie chart
+
+```{r}
+percent_oferty_wg_dzielnic <- oferty_wg_dzielnic %>% 
+  mutate(percent_dzielnice = n/(sum(n))*100) %>% 
+  arrange(percent_dzielnice)
+
+slices <- c(percent_oferty_wg_dzielnic$percent_dzielnice)
+lbls <- c(percent_oferty_wg_dzielnic$district)
+pie(slices, labels = lbls, main="Offers per district", border="white", col=myPalette)
+```
+
+Proportions of Airbnb offer types per given Barcelona district
+
+The districts of Nou Barris and Sant Andreu have the highest share of private rooms. These northern areas of Barcelona are not too popular among tourists. Rental and purchase prices of properties are lower there than in other parts of the city. 
+This could result in the ability to live in a unit with more space, which probably results in the observed high share of private rooms. Residents can afford an extra room, which, when rented out to tourists, brings additional income
+
+```{r}
+
+library(BBmisc)
+
+pokoje_wg_dzielnic <- details_listings_lite %>% 
+  select(room_type, district) %>% 
+  group_by(room_type, district) %>% 
+  count(room_type) %>%
+  arrange(district)
+
+ggplot(pokoje_wg_dzielnic, aes(fill = reorder(room_type, (n)), x = n, y = district)) + 
+    geom_bar(position = "fill", stat = "identity") +
+  labs(y= "district", x = "% of offers") +
+  theme_bw()
+```
+
+Median price per night for each of Barcelona neighbourhoods
+
+The highest price median was represented in the districts Sarria Sant Gervasi and Eixample. The former is an area popular with rich residents where not many Airbnb listing are available, whereas the latter is one of the two most touristy neighbourhoods of Barcelona.
+
+```{r}
+price_distr_airbnb <- details_listings_lite %>% 
+  group_by(district) %>% 
+  summarise(median_price_per_night = median(price)) %>% 
+  arrange(median_price_per_night)
+
+price_distr_airbnb
+```
+
+Offer prices dependent on room type and district - heatmap
+
+The prices were transformed using the log command in order to transform the skewed data.
+The data presented on the heatmap below indicates that the most expensive entire apartment booking offers are located in the district Les Corts. The famous Camp Nou stadium is located in this area of Barcelona, which could be associated with the possibility of charging extra during football events.
+
+```{r}
+price_barrio_room_type <- details_listings_lite %>% 
+  select(room_type, district, price) %>% 
+  group_by(room_type, district) %>% 
+  count(room_type) %>%
+  arrange(district)
+
+price_barrio_room_type <- details_listings_lite %>% 
+  group_by(district, room_type) %>% 
+  summarise(avg_price_per_night = mean(price))
+```
+```{r}
+ggplot(price_barrio_room_type, aes(room_type, district)) +                     
+  geom_tile(aes(fill = log(avg_price_per_night))) +
+  scale_fill_gradient(low = "yellow", high = "red") +
+  labs(x = "room type", y = "district")+
+  guides(fill=guide_legend(title="price (log)")) +
+  theme_bw()
+```
+
+Prices dependent on the amount of rooms available in the listing
+
+Logically, the more rooms are offered in a listing, the more expensive it gets. Based on the visualization below it was observed that the prices varied the most for apartments which offerred 1 to 4 rooms.
+
+```{r}
+price_bedroom_nr <- details_listings_lite %>% 
+  group_by(bedrooms)
+
+boxplot(log(price) ~ bedrooms, price_bedroom_nr, col = c("orange" , "yellow"))
+```
+
+Wordcloud for most common amenities occurring in top 500 most expensive listings
+
+The minimum number of occurrences of a given facility was set at 200 times to achieve a recurrence rate of 40% for both most and least expensive listings.
+
+When comparing the word clouds, it was deduced that in both the most expensive and the cheapest offers the most common terms were: long term stays allowed, wifi, tv, hot water, elevator, hair dryer, heating. These words describe the amenities that should be offered in your apartment or room. 
+
+The most expensive offers are distinguished by the following phrases: air conditioning, coffee machine, crib, extra bed linens. In conclusion, the most expensive offers may be targeted at families with children - this observation was indicated by the frequency of occurrence of a crib. 
+
+```{r}
+amenities_top <- details_listings_lite %>% 
+  select(price, amenities) %>% 
+  slice_max(price, n = 500) %>% 
+  select(amenities) %>% 
+   unnest_tokens(word, amenities) %>% 
+  count(word) %>% 
+  arrange(desc(n))
+
+set.seed(132)
+wordcloud(words = amenities_top$word, freq = amenities_top$n,
+          min.freq = 200, random.order = FALSE, rot.per = -1, colors = brewer.pal(7, "Dark2"))
+```
+
+Wordcloud for most common ammenities occurring in top 500 least expensive listings
+
+```{r}
+amenities_bottom <- details_listings_lite %>%
+  filter(price > 1) %>% 
+  select(price, amenities) %>% 
+  slice_min(price, n = 500) %>% 
+  select(amenities)
+
+amenities_bottom <- details_listings_lite %>% 
+  select(price, amenities) %>% 
+  slice_min(price, n = 500) %>% 
+  select(amenities) %>% 
+   unnest_tokens(word, amenities) %>% 
+  count(word) %>% 
+  arrange(desc(n))
+
+set.seed(132)
+wordcloud(words = amenities_bottom$word, freq = amenities_bottom$n,
+          min.freq = 200, random.order = FALSE, rot.per = -1, colors = brewer.pal(7, "Dark2"))
+```
+
+Summary
+
+This project was an interesting exercise which enabled me to explore Airbnb listings in the city of Barcelona, as well as R data visualization capabilities. 
+
+Based on the findings of the analysis, over a half of the listings are located in two popular districts - Eixample and Ciutat Vella. A little over 50% of the listings represent entire apartments. Listings that offer up to 4 rooms have the most varied prices. 
+
+The most expensive entire flats can be found in the district of Les Corts, in the proximity of the famous football stadium Camp Nou. 
+
+The listings that achieve the highest prices offer air conditioning, coffee machine, crib, extra bed linens. The last two amenities might indicate that those offers are dedicated for families travelling with children.
