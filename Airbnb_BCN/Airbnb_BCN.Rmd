@@ -1,7 +1,7 @@
 ---
 title: "Prices of Airbnb Offers in Barcelona - Data Exploration"
 author: "Martyna Smektała"
-date: "4/9/2022"
+date: "09/04/2022"
 output: html_document
 ---
 
@@ -11,7 +11,7 @@ knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
 
 The purpose of this data exploration was to define characteristics of the most expensive Airbnb listings in the city of Barcelona.
 
-In order to start the analysis, the relevant data sets and R packages were loaded. The data sets store information regarding Airbnb listings in the city of Barcelona, updated on June 8th, 2021. Data source: http://insideairbnb.com/get-the-data.
+In order to start the analysis, the relevant data sets and R packages were loaded. The data sets store information regarding Airbnb listings in the city of Barcelona, updated on December 7th, 2021. Data source: http://insideairbnb.com/get-the-data.
 
 
 ```{r}
